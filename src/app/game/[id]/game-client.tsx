@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Board from '@/components/Board'
 import PieceSelector from '@/components/PieceSelector'
@@ -88,8 +88,12 @@ export default function GameClient({ gameId }: { gameId: string }) {
   }
 
   async function handleCellClick(r: number, c: number) {
-    if (!game || !isMyTurn || !selectedPiece || !previewValid) return
-    const cells = previewCells
+    if (!game || !isMyTurn || !selectedPiece || mySeatIndex < 0) return
+    const orientations = PIECE_ORIENTATIONS[selectedPiece]
+    if (!orientations?.length) return
+    const orientation = orientations[orientationIdx % orientations.length]
+    const cells: [number, number][] = orientation.map(([dr, dc]) => [r + dr, c + dc])
+    if (!isValidPlacement(game.board, mySeatIndex, cells)) return
     const res = await fetch(`/api/games/${gameId}/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -243,7 +247,7 @@ export default function GameClient({ gameId }: { gameId: string }) {
               previewValid={previewValid}
               onCellHover={handleCellHover}
               onCellClick={handleCellClick}
-              disabled={!isMyTurn || !selectedPiece}
+              disabled={!isMyTurn}
             />
           </div>
 
